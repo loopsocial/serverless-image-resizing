@@ -9,37 +9,81 @@ const Sharp = require('sharp');
 const BUCKET = process.env.BUCKET;
 const URL = process.env.URL;
 
-exports.handler = function(event, context, callback) {
-  const key = event.queryStringParameters.key;
-  // const match = key.match(/(\d+)x(\d+)\/(.*)/);
-  // const width = parseInt(match[1], 10);
-  // const height = parseInt(match[2], 10);
-  // const originalKey = match[3];
-  const match = key.match(/(.*)\/(\d+)x(\d+)\/(.*)/);
-  const width = parseInt(match[2], 10);
-  const height = parseInt(match[3], 10);
-  const originalKey = match[1] + "/original/" + match[4];
+function resizeImage(data, width, height, format) {
+  return Sharp(data.Body)
+  .resize(width, height)
+  .max()
+  .toFormat(format)
+  .toBuffer()
+}
 
-  S3.getObject({Bucket: BUCKET, Key: originalKey}).promise()
-    .then(data => Sharp(data.Body)
-      .resize(width, height)
-      .max()
-      .toFormat('png')
-      .toBuffer()
-    )
+function resizeThumbnail(data, width, height, format) {
+  return Sharp(data.Body)
+  .resize(width, height)
+  .crop()
+  .toFormat(format)
+  .toBuffer()
+}
+
+function format(extension) {
+  switch(extension) {
+    case "png":
+      return "png";
+    case "jpeg":
+      return "jpeg";
+    case "jpg":
+      return "jpeg";
+  }
+}
+
+function parseQuery(key) {
+  const match = key.match(/(.*)\/(\d+)(x|_)(\d+)\/(.*)\.(png|jpeg|jpg)/);
+  if (match) {
+    return {
+      key: key,
+      width: parseInt(match[2], 10),
+      height: parseInt(match[4], 10),
+      format: format(match[6]),
+      crop: match[3] === '_',
+      originalKey: `${match[1]}/original/${match[5]}.${match[6]}`
+    };
+  } else {
+    return null;
+  }
+}
+
+exports.handler = function(event, context, callback) {
+  const q = parseQuery(event.queryStringParameters.key);
+
+  if (q) {
+    S3.getObject({Bucket: BUCKET, Key: q.originalKey}).promise()
+    .then(data => {
+      if (q.crop) {
+        return resizeThumbnail(data, q.width, q.height, q.format)
+      } else {
+        return resizeImage(data, q.width, q.height, q.format)
+      }
+    })
     .then(buffer => S3.putObject({
         Body: buffer,
         Bucket: BUCKET,
-        ContentType: 'image/png',
+        ContentType: `image/${q.format}`,
         CacheControl: 'max-age=12312312',
-        Key: key,
+        Key: q.key,
       }).promise()
     )
     .then(() => callback(null, {
         statusCode: '301',
-        headers: {'location': `${URL}/${key}`},
+        headers: {'location': `${URL}/${q.key}`},
         body: '',
       })
     )
     .catch(err => callback(err))
+  } else {
+    callback(null, {
+      statusCode: '404',
+      body: ''
+    })
+  }
+
 }
