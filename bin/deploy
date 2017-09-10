@@ -10,6 +10,8 @@ account_id="$(aws sts get-caller-identity --query Account --output text \
 
 set -o xtrace
 
+cd lambda && zip -FS -q -r ../dist/function.zip * && cd ../
+
 sed -e "s/REGION/${region}/g" -e "s/ACCOUNT_ID/${account_id}/g" \
   api-template.yaml > deploy/api.yaml
 
