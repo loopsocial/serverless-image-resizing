@@ -60,6 +60,16 @@ Resources:
       Bucket: !Ref FileBucket
       PolicyDocument:
         Statement:
+          - Action: 
+            - s3:GetObject
+            - s3:GetObjectVersion
+            - s3:PutObject
+            - s3:PutObjectAcl
+            - s3:DeleteObject
+            Effect: Allow
+            Principal:
+              AWS: arn:aws:iam::067246364203:user/developer
+            Resource: !Sub arn:aws:s3:::${FileBucket}/*
           - Action: s3:GetObject
             Effect: Allow
             Principal: "*"

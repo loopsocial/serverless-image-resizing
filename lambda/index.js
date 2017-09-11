@@ -26,7 +26,7 @@ function resizeThumbnail(data, width, height, format) {
 }
 
 function format(extension) {
-  switch(extension) {
+  switch(extension.toLowerCase()) {
     case "png":
       return "png";
     case "jpeg":
@@ -37,7 +37,7 @@ function format(extension) {
 }
 
 function parseQuery(key) {
-  const match = key.match(/(.*)\/(\d+)(x|_)(\d+)\/(.*)\.(png|jpeg|jpg)/);
+  const match = key.match(/(.*)\/(\d+)(x|_)(\d+)\/(.*)\.(png|jpeg|jpg)/i);
   if (match) {
     return {
       key: key,

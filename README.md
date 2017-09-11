@@ -35,7 +35,7 @@ Resizes images on the fly using Amazon S3, AWS Lambda, and Amazon API Gateway. U
   Enter "*/*.jpg" for the Path Pattern
   Set Default TTL to 0
   Click "Create"
-  Repeat for "*/*.png" and "*/*.jpeg"
+  Repeat for "*/*.png", "*/*.jpeg", "*/*.PNG", "*/*.JPG", "*/*.JPEG"
 
   Step 3. Update Lambda Environment
   Copy the Domain Name in CloudFront
