@@ -8,7 +8,7 @@ Resizes images on the fly using Amazon S3, AWS Lambda, and Amazon API Gateway. U
 
 1. Deploy the CloudFormation stack
 
-  Run `bin/deploy` to deploy the CloudFormation stack. It will create a temporary Amazon S3 bucket, package and upload the function, and create the Lambda function, Amazon API Gateway RestApi, and an S3 bucket for images via CloudFormation.
+  Run `bin/deploy [prod|sandbox]` to deploy the CloudFormation stack. It will create a temporary Amazon S3 bucket, package and upload the function, and create the Lambda function, Amazon API Gateway RestApi, and an S3 bucket for images via CloudFormation.
 
   The deployment script requires the [AWS CLI][cli] version 1.11.19 or newer to be installed.
 
@@ -35,7 +35,7 @@ Resizes images on the fly using Amazon S3, AWS Lambda, and Amazon API Gateway. U
   Enter "*/*.jpg" for the Path Pattern
   Set Default TTL to 0
   Click "Create"
-  Repeat for "*/*.png"
+  Repeat for "*/*.png" and "*/*.jpeg"
 
   Step 3. Update Lambda Environment
   Copy the Domain Name in CloudFront

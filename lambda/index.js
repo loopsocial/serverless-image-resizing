@@ -57,13 +57,10 @@ exports.handler = function(event, context, callback) {
 
   if (q) {
     S3.getObject({Bucket: BUCKET, Key: q.originalKey}).promise()
-    .then(data => {
-      if (q.crop) {
-        return resizeThumbnail(data, q.width, q.height, q.format)
-      } else {
-        return resizeImage(data, q.width, q.height, q.format)
-      }
-    })
+    .then(data => q.crop ?
+      resizeThumbnail(data, q.width, q.height, q.format) :
+      resizeImage(data, q.width, q.height, q.format)
+    )
     .then(buffer => S3.putObject({
         Body: buffer,
         Bucket: BUCKET,

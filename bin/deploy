@@ -2,9 +2,11 @@
 
 set -o errexit
 
-stack_name=ServerlessImageResize
+defaultenv=prod
+env=${1:-$defaultenv}
+stack_name=attachments-${env}
 region="$(aws configure get region)"
-bucket_name="temp-serverless-resize-$(openssl rand -hex 8)"
+bucket_name="temp-attachments-$(openssl rand -hex 8)"
 account_id="$(aws sts get-caller-identity --query Account --output text \
   | xargs echo -n)"
 
@@ -18,12 +20,12 @@ sed -e "s/REGION/${region}/g" -e "s/ACCOUNT_ID/${account_id}/g" \
 aws s3 mb "s3://${bucket_name}"
 
 aws cloudformation package \
-  --output-template-file=deploy/output.yaml \
+  --output-template-file=deploy/${env}.yaml \
   --template-file=image-resize.yaml \
   --s3-bucket="${bucket_name}" \
 
 aws cloudformation deploy \
-  --template-file=deploy/output.yaml \
+  --template-file=deploy/${env}.yaml \
   --stack-name="${stack_name}" \
   --capabilities=CAPABILITY_NAMED_IAM
 
