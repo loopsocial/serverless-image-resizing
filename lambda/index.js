@@ -11,6 +11,7 @@ const URL = process.env.URL;
 
 function resizeImage(data, width, height, format) {
   return Sharp(data.Body)
+  .rotate()
   .resize(width, height)
   .max()
   .toFormat(format)
@@ -19,6 +20,7 @@ function resizeImage(data, width, height, format) {
 
 function resizeThumbnail(data, width, height, format) {
   return Sharp(data.Body)
+  .rotate()
   .resize(width, height)
   .crop()
   .toFormat(format)
