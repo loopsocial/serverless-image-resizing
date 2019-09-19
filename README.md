@@ -57,7 +57,14 @@ Using CloudFront to serve files in SSL
 
 
 
-**Note:** If you create the Lambda function yourself, make sure to select Node.js version 6.10.
+**Note:** If you create the Lambda function yourself, make sure to select Node.js version 8.10.
+
+## Upgrade
+
+1. edit `Dockerfile` to use the node version that lambda support
+2. run `make all` to install node modules
+3. package lambda function `cd lambda && zip -FS -q -r ../dist/function.zip * && cd ../`
+4. upload lambda function zip pakcage and save it.
 
 ## License
 
