@@ -1,0 +1,26 @@
+service: image-resizing
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${opt:stage, 'staging'}
+  region: us-west-2
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - "s3:*"
+      Resource:
+      - "arn:aws:s3:::${file(./config/${self:provider.stage}.yml):BUCKET_NAME}/*"
+
+functions:
+  main:
+    handler: index.handler
+    events:
+      - http:
+          path: /
+          method: get
+
+    timeout: 60
+    environment:
+      BUCKET: ${file(./config/${self:provider.stage}.yml):BUCKET_NAME}
+      URL: ${file(./config/${self:provider.stage}.yml):CDN_URL}
