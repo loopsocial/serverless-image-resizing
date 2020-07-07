@@ -6,6 +6,18 @@ Resizes images on the fly using Amazon S3, AWS Lambda, and Amazon API Gateway. U
 
 ## Usage
 
+```
+# build sharp package with nodejs lambda docker image
+make package
+
+# deploy
+sls deploy # for staging
+sls deploy --stage prod # for prod
+
+```
+
+## Usage(deprecated)
+
 1. Build the Lambda function
 
    The Lambda function uses [sharp][sharp] for image resizing which requires
@@ -22,40 +34,38 @@ Resizes images on the fly using Amazon S3, AWS Lambda, and Amazon API Gateway. U
 
 2. Deploy the CloudFormation stack
 
-  Run `bin/deploy [prod|sandbox]` to deploy the CloudFormation stack. It will create a temporary Amazon S3 bucket, package and upload the function, and create the Lambda function, Amazon API Gateway RestApi, and an S3 bucket for images via CloudFormation.
+Run `bin/deploy [prod|sandbox]` to deploy the CloudFormation stack. It will create a temporary Amazon S3 bucket, package and upload the function, and create the Lambda function, Amazon API Gateway RestApi, and an S3 bucket for images via CloudFormation.
 
-  The deployment script requires the [AWS CLI][cli] version 1.11.19 or newer to be installed.
+The deployment script requires the [AWS CLI][cli] version 1.11.19 or newer to be installed.
 
 3. Test the function
 
-	Upload an image to the S3 bucket and try to resize it via your web browser to different sizes, e.g. with an image uploaded in the bucket called image.png:
+   Upload an image to the S3 bucket and try to resize it via your web browser to different sizes, e.g. with an image uploaded in the bucket called image.png:
 
-	- http://[BucketWebsiteHost]/300x300/image.png
-	- http://[BucketWebsiteHost]/90x90/image.png
-	- http://[BucketWebsiteHost]/40x40/image.png
+   - http://[BucketWebsiteHost]/300x300/image.png
+   - http://[BucketWebsiteHost]/90x90/image.png
+   - http://[BucketWebsiteHost]/40x40/image.png
 
-	You can find the BucketWebsiteUrl in the table of outputs displayed on a successful invocation of the deploy script.
+   You can find the BucketWebsiteUrl in the table of outputs displayed on a successful invocation of the deploy script.
 
 Using CloudFront to serve files in SSL
-  
-  Step 1. Create CloudFront Distribution
-  Go to CloudFront Distributions and Create Distribution
-  Select Web
-  For Original Domain Name, do not use S3 autocomplete, use the S3 static site URL
-  Click "Create Distribution"
 
-  Step 2. Create Behaviors
-  In Behaviors tab, click "Create Behavior"
-  Enter "*/*.jpg" for the Path Pattern
-  Set Default TTL to 0
-  Click "Create"
-  Repeat for "*/*.png", "*/*.jpeg", "*/*.PNG", "*/*.JPG", "*/*.JPEG"
+Step 1. Create CloudFront Distribution
+Go to CloudFront Distributions and Create Distribution
+Select Web
+For Original Domain Name, do not use S3 autocomplete, use the S3 static site URL
+Click "Create Distribution"
 
-  Step 3. Update Lambda Environment
-  Copy the Domain Name in CloudFront
-  Go to Lambda/Functions, select the lambda function, in the Environment variables section, set URL to the CLoudFront domain
+Step 2. Create Behaviors
+In Behaviors tab, click "Create Behavior"
+Enter "_/_.jpg" for the Path Pattern
+Set Default TTL to 0
+Click "Create"
+Repeat for "_/_.png", "_/_.jpeg", "_/_.PNG", "_/_.JPG", "_/_.JPEG"
 
-
+Step 3. Update Lambda Environment
+Copy the Domain Name in CloudFront
+Go to Lambda/Functions, select the lambda function, in the Environment variables section, set URL to the CLoudFront domain
 
 **Note:** If you create the Lambda function yourself, make sure to select Node.js version 8.10.
 
