@@ -9,19 +9,22 @@ const Sharp = require("sharp");
 const BUCKET = process.env.BUCKET;
 const URL = process.env.URL;
 
-function resizeImage(data, width, height, format) {
+function resizeImage(data, options) {
   return Sharp(data.Body)
     .rotate()
-    .resize(width, height, { fit: "inside" })
-    .toFormat(format)
+    .resize(options.width, options.height, { fit: "inside" })
+    .toFormat(options.format, { quality: options.quality })
     .toBuffer();
 }
 
-function resizeThumbnail(data, width, height, format) {
+function resizeThumbnail(data, options) {
   return Sharp(data.Body)
     .rotate()
-    .resize(width, height, { fit: "cover", position: "attention" })
-    .toFormat(format)
+    .resize(options.width, options.height, {
+      fit: "cover",
+      position: "attention",
+    })
+    .toFormat(options.format, { quality: options.quality })
     .toBuffer();
 }
 
@@ -33,19 +36,55 @@ function format(extension) {
       return "jpeg";
     case "jpg":
       return "jpeg";
+    case "webp":
+      return "webp";
   }
 }
 
 function parseQuery(key) {
-  const match = key.match(/(.*)\/(\d+)(x|_)(\d+)\/(.*)\.(png|jpeg|jpg)/i);
+  const match = key.match(
+    // medias/2019/8/23/1566543539-pxcgzkoi/540_960/IMG_20190413_232558.jpg.webp
+    // 	-> medias/2019/8/23/1566543539-pxcgzkoi/original/IMG_20190413_232558.jpg
+    /(?<originalKey>.*\/(?<sizePart>(?<width>\d+)(?<cropOrFit>x|_)(?<height>\d+))\/.*?\.(?<sourceFormat>png|jpeg|jpg))(\.(?<quality>[0-9]{2}))?(\.(?<destFormat>png|jpeg|jpg|webp))?/i
+  );
+  const match2 = key.match(
+    // medias/2019/10/1/1569974287-ofqhpmiw/transcoded/120/margauxfacetransformatioon2.png.wepb
+    // 	-> medias/2019/10/1/1569974287-ofqhpmiw/transcoded/540/margauxfacetransformatioon2.png
+    /(?<originalKey>.*\/transcoded\/(?<width>\d+)\/.*?\.(?<sourceFormat>png|jpeg|jpg))(\.(?<quality>[0-9]{2}))?(\.(?<destFormat>png|jpeg|jpg|webp))?/i
+  );
   if (match) {
     return {
       key: key,
-      width: parseInt(match[2], 10),
-      height: parseInt(match[4], 10),
-      format: format(match[6]),
-      crop: match[3] === "_",
-      originalKey: `${match[1]}/original/${match[5]}.${match[6]}`,
+      width: parseInt(match.groups.width, 10),
+      height: parseInt(match.groups.height, 10),
+      format: match.groups.destFormat
+        ? format(match.groups.destFormat)
+        : format(match.groups.sourceFormat),
+      crop: match.groups.cropOrFit === "_",
+      quality: match.groups.quality
+        ? parseInt(match.groups.quality, 10)
+        : undefined,
+      originalKey: match.groups.originalKey.replace(
+        `/${match.groups.sizePart}/`,
+        "/original/"
+      ),
+    };
+  } else if (match2) {
+    return {
+      key: key,
+      width: parseInt(match2.groups.width, 10),
+      height: parseInt(match2.groups.width * 1.7777777778, 10), // 540x960 ratio
+      format: match2.groups.destFormat
+        ? format(match2.groups.destFormat)
+        : format(match2.groups.sourceFormat),
+      crop: true,
+      quality: match2.groups.quality
+        ? parseInt(match2.groups.quality, 10)
+        : undefined,
+      originalKey: match2.groups.originalKey.replace(
+        `/${match2.groups.width}/`,
+        "/540/"
+      ),
     };
   } else {
     return null;
@@ -56,13 +95,11 @@ exports.handler = function (event, context, callback) {
   const q = parseQuery(event.queryStringParameters.key);
 
   if (q) {
-    console.log(`processing ${q.originalKey}`);
+    // console.log(`processing ${q.originalKey}`, JSON.stringify(q));
     S3.getObject({ Bucket: BUCKET, Key: q.originalKey })
       .promise()
       .then((data) =>
-        q.crop
-          ? resizeThumbnail(data, q.width, q.height, q.format)
-          : resizeImage(data, q.width, q.height, q.format)
+        q.crop ? resizeThumbnail(data, q) : resizeImage(data, q)
       )
       .then((buffer) =>
         S3.putObject({
