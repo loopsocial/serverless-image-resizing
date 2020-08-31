@@ -95,9 +95,8 @@ function parseQuery(key) {
 
 async function asyncForEach(array, callback) {
   for (let index = 0; index < array.length; index++) {
-    try {
-      await callback(array[index], index, array);
-    } catch (err) {}
+    const breakLoop = await callback(array[index], index, array);
+    if (breakLoop) break;
   }
 }
 
@@ -109,9 +108,8 @@ exports.handler = function (event, context, callback) {
 
     (async () => {
       const errors = [];
-      await asyncForEach(
-        params.originalKeys,
-        async (originalKey) => {
+      await asyncForEach(params.originalKeys, async (originalKey) => {
+        try {
           const originalS3object = await S3.getObject({
             Bucket: BUCKET,
             Key: originalKey,
@@ -134,11 +132,13 @@ exports.handler = function (event, context, callback) {
             headers: { location: `${URL}/${params.key}` },
             body: "",
           });
-        },
-        (err) => {
+
+          return true;
+        } catch (err) {
           errors.push(err);
         }
-      );
+        return false;
+      });
 
       callback(errors);
     })();
