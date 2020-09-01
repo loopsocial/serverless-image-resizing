@@ -64,10 +64,12 @@ function parseQuery(key) {
       quality: match.groups.quality
         ? parseInt(match.groups.quality, 10)
         : undefined,
-      originalKey: match.groups.originalKey.replace(
-        `/${match.groups.sizePart}/`,
-        "/original/"
-      ),
+      originalKeys: [
+        match.groups.originalKey.replace(
+          `/${match.groups.sizePart}/`,
+          "/original/"
+        ),
+      ],
     };
   } else if (match2) {
     return {
@@ -81,43 +83,65 @@ function parseQuery(key) {
       quality: match2.groups.quality
         ? parseInt(match2.groups.quality, 10)
         : undefined,
-      originalKey: match2.groups.originalKey.replace(
-        `/${match2.groups.width}/`,
-        "/540/"
-      ),
+      originalKeys: [
+        match2.groups.originalKey.replace(`/${match2.groups.width}/`, "/540/"),
+        match2.groups.originalKey.replace(`/${match2.groups.width}/`, "/000/"),
+      ],
     };
   } else {
     return null;
   }
 }
 
-exports.handler = function (event, context, callback) {
-  const q = parseQuery(event.queryStringParameters.key);
+async function asyncForEach(array, callback) {
+  for (let index = 0; index < array.length; index++) {
+    const breakLoop = await callback(array[index], index, array);
+    if (breakLoop) break;
+  }
+}
 
-  if (q) {
-    // console.log(`processing ${q.originalKey}`, JSON.stringify(q));
-    S3.getObject({ Bucket: BUCKET, Key: q.originalKey })
-      .promise()
-      .then((data) =>
-        q.crop ? resizeThumbnail(data, q) : resizeImage(data, q)
-      )
-      .then((buffer) =>
-        S3.putObject({
-          Body: buffer,
-          Bucket: BUCKET,
-          ContentType: `image/${q.format}`,
-          CacheControl: "max-age=12312312",
-          Key: q.key,
-        }).promise()
-      )
-      .then(() =>
-        callback(null, {
-          statusCode: "301",
-          headers: { location: `${URL}/${q.key}` },
-          body: "",
-        })
-      )
-      .catch((err) => callback(err));
+exports.handler = function (event, context, callback) {
+  const params = parseQuery(event.queryStringParameters.key);
+
+  if (params) {
+    // console.log(`processing ${params.originalKeys}`, JSON.stringify(params));
+
+    (async () => {
+      const errors = [];
+      await asyncForEach(params.originalKeys, async (originalKey) => {
+        try {
+          const originalS3object = await S3.getObject({
+            Bucket: BUCKET,
+            Key: originalKey,
+          }).promise();
+
+          const buffer = params.crop
+            ? await resizeThumbnail(originalS3object, params)
+            : await resizeImage(originalS3object, params);
+
+          await S3.putObject({
+            Body: buffer,
+            Bucket: BUCKET,
+            ContentType: `image/${params.format}`,
+            CacheControl: "max-age=12312312",
+            Key: params.key,
+          }).promise();
+
+          callback(null, {
+            statusCode: "301",
+            headers: { location: `${URL}/${params.key}` },
+            body: "",
+          });
+
+          return true;
+        } catch (err) {
+          errors.push(err);
+        }
+        return false;
+      });
+
+      callback(errors);
+    })();
   } else {
     callback(null, {
       statusCode: "404",
