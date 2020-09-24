@@ -21,8 +21,7 @@ function resizeThumbnail(data, options) {
   return Sharp(data.Body)
     .rotate()
     .resize(options.width, options.height, {
-      fit: "cover",
-      position: "center",
+      fit: "cover"
     })
     .toFormat(options.format, { quality: options.quality })
     .toBuffer();
