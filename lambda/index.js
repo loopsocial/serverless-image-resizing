@@ -22,7 +22,7 @@ function resizeThumbnail(data, options) {
     .rotate()
     .resize(options.width, options.height, {
       fit: "cover",
-      position: "attention",
+      position: "center",
     })
     .toFormat(options.format, { quality: options.quality })
     .toBuffer();
