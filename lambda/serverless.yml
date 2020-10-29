@@ -6,15 +6,17 @@ provider:
   stage: ${opt:stage, 'staging'}
   region: us-west-2
   iamRoleStatements:
-    - Effect: 'Allow'
+    - Effect: "Allow"
       Action:
         - "s3:*"
       Resource:
-      - "arn:aws:s3:::${file(./config/${self:provider.stage}.yml):BUCKET_NAME}/*"
+        - "arn:aws:s3:::${file(./config/${self:provider.stage}.yml):BUCKET_NAME}/*"
 
 functions:
   main:
     handler: index.handler
+    layers:
+      - arn:aws:lambda:us-west-2:170553093583:layer:image-magick:1
     events:
       - http:
           path: /

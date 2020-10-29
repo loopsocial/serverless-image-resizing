@@ -5,11 +5,28 @@ const S3 = new AWS.S3({
   signatureVersion: "v4",
 });
 const Sharp = require("sharp");
+const ImageMagick = require("imagemagick");
 
 const BUCKET = process.env.BUCKET;
 const URL = process.env.URL;
 
 function resizeImage(data, options) {
+  if (["gif", "webp"].includes(options.format)) {
+    return new Promise((resolve, reject) => {
+      ImageMagick.resize(
+        {
+          srcFormat: options.format,
+          srcData: data.Body,
+          format: options.format,
+          width: options.width,
+          height: options.height,
+        },
+        (err, stdout, stderr) => {
+          err ? reject(stderr) : resolve(stdout);
+        }
+      );
+    });
+  }
   return Sharp(data.Body)
     .rotate()
     .resize(options.width, options.height, { fit: "inside" })
@@ -28,15 +45,12 @@ function resizeThumbnail(data, options) {
 }
 
 function format(extension) {
-  switch (extension.toLowerCase()) {
-    case "png":
-      return "png";
-    case "jpeg":
-      return "jpeg";
+  const lowercased = extension.toLowerCase();
+  switch (lowercased) {
     case "jpg":
       return "jpeg";
-    case "webp":
-      return "webp";
+    default:
+      return lowercased;
   }
 }
 
@@ -44,12 +58,12 @@ function parseQuery(key) {
   const match = key.match(
     // medias/2019/8/23/1566543539-pxcgzkoi/540_960/IMG_20190413_232558.jpg.webp
     // 	-> medias/2019/8/23/1566543539-pxcgzkoi/original/IMG_20190413_232558.jpg
-    /(?<originalKey>.*\/(?<sizePart>(?<width>\d+)(?<cropOrFit>x|_)(?<height>\d+))\/.*?\.(?<sourceFormat>png|jpeg|jpg))(\.(?<quality>[0-9]{2}))?(\.(?<destFormat>png|jpeg|jpg|webp))?/i
+    /(?<originalKey>.*\/(?<sizePart>(?<width>\d+)(?<cropOrFit>x|_)(?<height>\d+))\/.*?\.(?<sourceFormat>png|jpeg|jpg|gif|webp))(\.(?<quality>[0-9]{2}))?(\.(?<destFormat>png|jpeg|jpg|gif|webp))?/i
   );
   const match2 = key.match(
     // medias/2019/10/1/1569974287-ofqhpmiw/transcoded/120/margauxfacetransformatioon2.png.wepb
     // 	-> medias/2019/10/1/1569974287-ofqhpmiw/transcoded/540/margauxfacetransformatioon2.png
-    /(?<originalKey>.*\/transcoded\/(?<width>\d+)\/.*?\.(?<sourceFormat>png|jpeg|jpg))(\.(?<quality>[0-9]{2}))?(\.(?<destFormat>png|jpeg|jpg|webp))?/i
+    /(?<originalKey>.*\/transcoded\/(?<width>\d+)\/.*?\.(?<sourceFormat>png|jpeg|jpg|gif|webp))(\.(?<quality>[0-9]{2}))?(\.(?<destFormat>png|jpeg|jpg|gif|webp))?/i
   );
   if (match) {
     return {
@@ -101,10 +115,12 @@ async function asyncForEach(array, callback) {
 
 exports.handler = function (event, context, callback) {
   const params = parseQuery(event.queryStringParameters.key);
+  console.log(
+    `processing ${event.queryStringParameters.key}`,
+    JSON.stringify(params)
+  );
 
   if (params) {
-    // console.log(`processing ${params.originalKeys}`, JSON.stringify(params));
-
     (async () => {
       const errors = [];
       await asyncForEach(params.originalKeys, async (originalKey) => {
