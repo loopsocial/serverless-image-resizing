@@ -10,8 +10,17 @@ const ImageMagick = require("imagemagick");
 const BUCKET = process.env.BUCKET;
 const URL = process.env.URL;
 
+function isWebpAnimated(data) {
+  return data.toString().substring(0, 256).includes("WEBPVP8X");
+}
+
 function resizeImage(data, options) {
-  if (["gif", "webp"].includes(options.sourceFormat)) {
+  if (
+    "gif" === options.sourceFormat ||
+    ("webp" === options.sourceFormat &&
+      "webp" === options.format &&
+      isWebpAnimated(data.Body))
+  ) {
     return new Promise((resolve, reject) => {
       ImageMagick.resize(
         {
@@ -20,7 +29,6 @@ function resizeImage(data, options) {
           format: options.format,
           width: options.width,
           height: options.height,
-          quality: options.quality,
         },
         (err, stdout, stderr) => {
           err ? reject(stderr) : resolve(new Buffer(stdout, "binary"));
@@ -36,6 +44,28 @@ function resizeImage(data, options) {
 }
 
 function resizeThumbnail(data, options) {
+  if (
+    "gif" === options.sourceFormat ||
+    ("webp" === options.sourceFormat &&
+      "webp" === options.format &&
+      isWebpAnimated(data.Body))
+  ) {
+    return new Promise((resolve, reject) => {
+      ImageMagick.resize(
+        {
+          srcFormat: options.sourceFormat,
+          srcData: data.Body,
+          format: options.format,
+          width: options.width,
+          height: options.height,
+          crop: "center",
+        },
+        (err, stdout, stderr) => {
+          err ? reject(stderr) : resolve(new Buffer(stdout, "binary"));
+        }
+      );
+    });
+  }
   return Sharp(data.Body)
     .rotate()
     .resize(options.width, options.height, {
