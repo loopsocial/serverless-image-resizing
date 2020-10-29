@@ -11,15 +11,16 @@ const BUCKET = process.env.BUCKET;
 const URL = process.env.URL;
 
 function resizeImage(data, options) {
-  if (["gif", "webp"].includes(options.format)) {
+  if (["gif", "webp"].includes(options.sourceFormat)) {
     return new Promise((resolve, reject) => {
       ImageMagick.resize(
         {
-          srcFormat: options.format,
+          srcFormat: options.sourceFormat,
           srcData: data.Body,
           format: options.format,
           width: options.width,
           height: options.height,
+          quality: options.quality,
         },
         (err, stdout, stderr) => {
           err ? reject(stderr) : resolve(new Buffer(stdout, "binary"));
@@ -73,6 +74,7 @@ function parseQuery(key) {
       format: match.groups.destFormat
         ? format(match.groups.destFormat)
         : format(match.groups.sourceFormat),
+      sourceFormat: match.groups.sourceFormat,
       crop: match.groups.cropOrFit === "_",
       quality: match.groups.quality
         ? parseInt(match.groups.quality, 10)
@@ -92,6 +94,7 @@ function parseQuery(key) {
       format: match2.groups.destFormat
         ? format(match2.groups.destFormat)
         : format(match2.groups.sourceFormat),
+      sourceFormat: match.groups.sourceFormat,
       crop: true,
       quality: match2.groups.quality
         ? parseInt(match2.groups.quality, 10)
