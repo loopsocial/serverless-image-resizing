@@ -16,7 +16,7 @@ functions:
   main:
     handler: index.handler
     layers:
-      - arn:aws:lambda:us-west-2:170553093583:layer:image-magick:1
+      - arn:aws:lambda:us-west-2:170553093583:layer:image-magick:2
     events:
       - http:
           path: /
