@@ -148,10 +148,6 @@ async function asyncForEach(array, callback) {
 
 exports.handler = function (event, context, callback) {
   const params = parseQuery(event.queryStringParameters.key);
-  console.log(
-    `processing ${event.queryStringParameters.key}`,
-    JSON.stringify(params)
-  );
 
   if (params) {
     (async () => {
