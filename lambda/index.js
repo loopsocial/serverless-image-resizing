@@ -88,12 +88,12 @@ function format(extension) {
 function parseQuery(key) {
   const match = key.match(
     // medias/2019/8/23/1566543539-pxcgzkoi/540_960/IMG_20190413_232558.jpg.webp
-    // 	-> medias/2019/8/23/1566543539-pxcgzkoi/original/IMG_20190413_232558.jpg
+    //  -> medias/2019/8/23/1566543539-pxcgzkoi/original/IMG_20190413_232558.jpg
     /(?<originalKey>.*\/(?<sizePart>(?<width>\d+)(?<cropOrFit>x|_)(?<height>\d+))\/.*?\.(?<sourceFormat>png|jpeg|jpg|gif|webp))(\.(?<quality>[0-9]{2}))?(\.(?<destFormat>png|jpeg|jpg|gif|webp))?/i
   );
   const match2 = key.match(
     // medias/2019/10/1/1569974287-ofqhpmiw/transcoded/120/margauxfacetransformatioon2.png.wepb
-    // 	-> medias/2019/10/1/1569974287-ofqhpmiw/transcoded/540/margauxfacetransformatioon2.png
+    //  -> medias/2019/10/1/1569974287-ofqhpmiw/transcoded/540/margauxfacetransformatioon2.png
     /(?<originalKey>.*\/transcoded\/(?<width>\d+)\/.*?\.(?<sourceFormat>png|jpeg|jpg|gif|webp))(\.(?<quality>[0-9]{2}))?(\.(?<destFormat>png|jpeg|jpg|gif|webp))?/i
   );
   if (match) {
@@ -124,7 +124,7 @@ function parseQuery(key) {
       format: match2.groups.destFormat
         ? format(match2.groups.destFormat)
         : format(match2.groups.sourceFormat),
-      sourceFormat: match.groups.sourceFormat,
+      sourceFormat: match2.groups.sourceFormat,
       crop: true,
       quality: match2.groups.quality
         ? parseInt(match2.groups.quality, 10)
@@ -147,6 +147,7 @@ async function asyncForEach(array, callback) {
 }
 
 exports.handler = function (event, context, callback) {
+  // console.log(event.queryStringParameters.key);
   const params = parseQuery(event.queryStringParameters.key);
 
   if (params) {
