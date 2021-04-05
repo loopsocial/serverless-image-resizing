@@ -94,7 +94,7 @@ function parseQuery(key) {
   const match2 = key.match(
     // medias/2019/10/1/1569974287-ofqhpmiw/transcoded/120/margauxfacetransformatioon2.png.wepb
     //  -> medias/2019/10/1/1569974287-ofqhpmiw/transcoded/540/margauxfacetransformatioon2.png
-    /(?<originalKey>.*\/transcoded\/(?<width>\d+)\/.*?\.(?<sourceFormat>png|jpeg|jpg|gif|webp))(\.(?<quality>[0-9]{2}))?(\.(?<destFormat>png|jpeg|jpg|gif|webp))?/i
+    /(?<originalKey>.*\/transcoded\/(?<width>[1-9]\d+)\/.*?\.(?<sourceFormat>png|jpeg|jpg|gif|webp))(\.(?<quality>[0-9]{2}))?(\.(?<destFormat>png|jpeg|jpg|gif|webp))?/i
   );
   if (match) {
     return {
